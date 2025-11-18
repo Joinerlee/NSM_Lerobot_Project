@@ -1,0 +1,20 @@
+# PyTorch is pre-installed in the base image, but listing here for reference
+# torch
+# torchvision
+numpy
+opencv-python
+huggingface_hub
+diffusers
+gymnasium
+cmake
+h5py
+termcolor
+wandb
+# Backend Dependencies
+fastapi
+uvicorn[standard]
+sqlalchemy
+asyncpg
+psycopg2-binary
+requests
+pydantic
