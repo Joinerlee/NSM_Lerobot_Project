@@ -1,0 +1,54 @@
+services:
+  lerobot-inference:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lerobot-jetson:latest
+    container_name: lerobot_inference
+    runtime: nvidia
+    restart: always
+    network_mode: host # Host networking is easiest for accessing hardware on Jetson
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./scripts:/app/scripts
+      - ./src:/app/src
+      - /tmp/argus_socket:/tmp/argus_socket
+    environment:
+      - DISPLAY=${DISPLAY}
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - BACKEND_API_URL=http://localhost:8000 # Localhost works with network_mode: host
+    devices:
+      - /dev/video0:/dev/video0
+    command: tail -f /dev/null
+
+  backend:
+    image: python:3.9-slim
+    container_name: lerobot_backend
+    restart: always
+    network_mode: host # Share network with inference container
+    volumes:
+      - ./src/backend:/app/src/backend
+      - ./requirements.txt:/app/requirements.txt
+    working_dir: /app
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://lerobot:lerobot_password@localhost/lerobot_db
+    command: >
+      sh -c "pip install -r requirements.txt &&
+             uvicorn src.backend.main:app --host 0.0.0.0 --port 8000"
+
+  db:
+    image: postgres:15-alpine
+    container_name: lerobot_db
+    restart: always
+    network_mode: host # Share network
+    environment:
+      - POSTGRES_USER=lerobot
+      - POSTGRES_PASSWORD=lerobot_password
+      - POSTGRES_DB=lerobot_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
